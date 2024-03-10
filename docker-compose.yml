@@ -1,0 +1,78 @@
+version: "3"
+services:
+  strapi:
+    container_name: strapi2
+    build:
+      context: /.
+      dockerfile: Dockerfile
+    image: strapi
+    restart: unless-stopped
+    env_file: .env
+
+    environment:
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: strapiDB
+      DATABASE_PORT: 5432
+      DATABASE_NAME: strapi-pg
+      DATABASE_USERNAME: strapi
+      DATABASE_PASSWORD: safepassword
+      JWT_SECRET: x4fsxc9JnPRPNHo908Qv2A==
+      ADMIN_JWT_SECRET: kguliRfZBjD0VrLLxqJHMw==
+      APP_KEYS: 1+2M+1ZBxoy8B7g9VjCyTw==,B/+6cR2a07WPz9evWmyTMg==,7Y8U0muh67p+x90JgyPVRw==,uZ4NFwgy7CESC5Xym+4uWg==
+      NODE_ENV: development
+    volumes:
+      - ./config:/opt/app/config
+      - ./src:/opt/app/src
+      - ./package.json:/opt/package.json
+      - ./yarn.lock:/opt/yarn.lock
+      - ./.env:/opt/app/.env
+      - ./public/uploads:/opt/app/public/uploads
+    ports:
+      - "1337:1337"
+    networks:
+      - strapi
+    depends_on:
+      - strapiDB
+
+  strapiDB:
+    container_name: strapiDB
+    platform: linux/amd64 #for platform error on Apple M1 chips
+    restart: unless-stopped
+    env_file: .env
+    image: postgres:12.0-alpine
+    environment:
+      POSTGRES_USER: strapi
+      POSTGRES_PASSWORD: safepassword
+      POSTGRES_DB: strapi-pg
+    volumes:
+      - strapi-data:/var/lib/postgresql/data/ #using a volume
+      #- ./data:/var/lib/postgresql/data/ # if you want to use a bind folder
+
+    ports:
+      - "5432:5432"
+    networks:
+      - strapi
+  front:
+    container_name: frontend2
+    build: 
+      context: ../opsci-strapi-frontend
+      dockerfile: Dockerfile
+    image: front
+    restart: unless-stopped  
+    ports: 
+      - "5173:5173"
+    networks:
+      - strapi
+    depends_on:
+      - strapiDB
+
+
+
+
+volumes:
+  strapi-data:
+
+networks:
+  strapi:
+    name: Strapi
+    driver: bridge
